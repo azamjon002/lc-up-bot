@@ -1,0 +1,17 @@
+{
+    "name": "azamjon/lc-up",
+    "autoload": {
+        "psr-4": {
+            "Azamjon\\LcUp\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "azamjon002",
+            "email": "azamjonqochqorov002@gmail.com"
+        }
+    ],
+    "require": {
+        "telegram-bot/api": "^2.3.15"
+    }
+}
