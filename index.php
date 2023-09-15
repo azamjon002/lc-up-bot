@@ -5,9 +5,9 @@ require 'vendor/autoload.php';
 require_once 'database.php';
 require_once 'inlineBtn.php';
 require_once 'replyBtn.php';
+require_once 'config.php';
 
 
-$botToken = '6503138059:AAHpMY-jnrVfr-q_01uouLwriGyNerUmKFA';
 // https://api.telegram.org/bot5975116041:AAHecUKDBOSDuJuQvKCfS0aETpZ5Naqy0oI/setWebhook?url=https://419d-188-113-206-179.ngrok-free.app/lc-up/index.php
 
 /**

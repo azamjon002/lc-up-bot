@@ -98,13 +98,13 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
     }
 
     if ($user_status == 'yangi password'){
-        if (strlen($textChecker) >= 8 ){
+        if (strlen($textChecker) >= 4 ){
             query("UPDATE users SET status_for_bot = 'login boldi' WHERE chat_id = '$chat_id'");
             $new_hash_password = password_hash($textChecker, PASSWORD_BCRYPT);
             query("UPDATE users SET password = '$new_hash_password' WHERE chat_id = '$chat_id'");
             $bot->sendMessage($chat_id, '✅ Parol muaffaqiyatli tahrirlandi ✅', null, false, null, $main_menu_btn);
         }else{
-            $bot->sendMessage($chat_id, "⭕️ Parol 8 ta ishoradan kam bo'lmasligi kerak");
+            $bot->sendMessage($chat_id, "⭕️ Parol 4 ta ishoradan kam bo'lmasligi kerak");
         }
 
     }
