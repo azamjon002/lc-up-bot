@@ -10,6 +10,7 @@ use ($bot, $request_contact, $main_menu_btn)
     $has_login = query("SELECT * FROM users WHERE chat_id = '$chat_id'")->num_rows;
 
     if ($has_login > 0){
+        query("UPDATE users SET status_for_bot = 'login boldi' WHERE chat_id = '$chat_id'");
          $bot->sendMessage($chat_id, "Siz botdan oldin ro'yhatdan o'tgansiz!",'HTML');
          $bot->sendMessage($chat_id, "O'zingizga kerakli menyulardan birini tanlang!",'HTML', false, null,  $main_menu_btn);
     }else{
