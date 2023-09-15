@@ -19,12 +19,4 @@ include 'callback.php';
 
 include 'on.php';
 
-<<<<<<< HEAD
-
-
- if(!empty($bot->getRawBody())){
- $bot->run();
- }
-=======
 $bot->run();
->>>>>>> 62c426693d48485b8977d386d5e29ef39f20b757
