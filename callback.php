@@ -55,6 +55,15 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
     //GURUHGA KIRISH
     if (strpos($data, 'group')!== false){
         $group_id = explode('_', $data)[1];
+
+        $bot->deleteMessage($chat_id,$message_id);
+        $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"ℹ️ Ma'lumotlar", 'callback_data'=>"info_$group_id"],['text'=>"Davomat & Baholar", 'callback_data'=>"progolAnMark_$group_id"]]]);
+        $bot->sendMessage($chat_id, "Kerakli bo'limlardan birini tanlang", null, false, null, $btn);
+    }
+
+    //GURUH MALUMOTLARI
+    if (strpos($data, 'info')!== false){
+        $group_id = explode('_', $data)[1];
         $user_id = query("SELECT id FROM users WHERE chat_id = '$chat_id'")->fetch_assoc()['id'];
         $student_id = query("SELECT s.id FROM students s join users u ON s.user_id = u.id WHERE u.id = '$user_id'")->fetch_assoc()['id'];
 
@@ -90,84 +99,104 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
             }
         }
 
+
+        $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"⬅️ Orqaga", 'callback_data'=>"group_$group_id"]]]);
         $text = "👥 Guruh nomi: $group_name\n💵 Narxi:$cost\n📚 Kurs nomi: $course\n🏘 Xona: $room\n👩‍🏫 O'qituvchi: $teachers_name\n📅 Dars kunlari: $weeks_str\n🔓 Boshlanish vaqti: $start\n🔐 Tugash vaqti: $finish";
+        $bot->deleteMessage($chat_id,$message_id);
+        $bot->sendMessage($chat_id, $text, null, false, null, $btn);
+    }
 
-        $progol_system = query("SELECT * FROM `progol_systems` WHERE `group_id`='$group_id' AND `student_id` = '$student_id' AND MONTH(day) = MONTH(now())")->fetch_all();
+    //DAVOMAT SHU OY UCHUN
+    if (strpos($data, 'progolAnMark') !== false){
+        $group_id = explode('_', $data)[1];
+        $user_id = query("SELECT id FROM users WHERE chat_id = '$chat_id'")->fetch_assoc()['id'];
+        $student_id = query("SELECT s.id FROM students s join users u ON s.user_id = u.id WHERE u.id = '$user_id'")->fetch_assoc()['id'];
 
-        $progols = '';
-        $oy = date('F');
+        $progol_system = query("SELECT * FROM `progol_systems` WHERE `group_id`='$group_id' AND `student_id` = '$student_id' ORDER BY `day` DESC LIMIT 10")->fetch_all();
+
+
+        $progols = "So'ngi 10 kunlik davomat\n\nSana           Davomat     Baho\n\n";
 
         if (empty($progol_system)){
             $progols .= "❌ Ushbu oyda ma'lumot mavjud emas ❌";
         }else{
 
             foreach ($progol_system as $key => $item) {
+                $baho = $item['7'] ? "  ".$item['7'] : '➖';
+                $day = date('d-M',  strtotime($item['1']));
 
-                $baho = $item['7'] ?? '➖';
-                $day = "Sana: ".date('d',  strtotime($item['1']));
-
-
-                if ($key == array_key_last($progol_system)){
-                    if ($item['8'] == '1'){
-                        $progols .= $day." Davomat: ❌ Baho: ".$baho."\n";
-                    }else{
-                        $progols .= $day." Davomat: ✅ Baho: ".$baho."\n";
-                    }
+                if ($item['8'] == '0'){
+                    $progols .= $day."             ❌           ".$baho."\n";
                 }else{
-                    if ($item['8'] == '1'){
-                        $progols .= $day." Davomat: ❌ Baho: ".$baho."\n";
-                    }else{
-                        $progols .= $day." Davomat: ✅ Baho: ".$baho."\n";
-                    }
+                    $progols .= $day."             ✅           ".$baho."\n";
                 }
             }
+
         }
 
-
-        $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"Barchasini ko'rish", 'callback_data'=>"allPragol_$group_id"."_"."$student_id"]]]);
-        $bot->sendMessage($chat_id, $text);
-        $bot->sendMessage($chat_id, $oy." oyi uchun\n".$progols, null,false,null,$btn);
+        $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"Oylar bo'yicha tanlash", 'callback_data'=>"barchaOylar_$group_id"."_"."$student_id"]],[['text'=>"⬅️ Orqaga", 'callback_data'=>"group_$group_id"]]]);
+        $bot->deleteMessage($chat_id,$message_id);
+        $bot->sendMessage($chat_id, $progols, null,false,null,$btn);
 
     }
 
-    //BARCHA PROGOL SISTEMANI KO'RISH
-    if (strpos($data, 'allPragol')!== false){
+    //OYLARDAN BIRINI TANLASH
+    if (strpos($data, 'barchaOylar')!== false){
         $group_id = explode('_', $data)[1];
         $student_id = explode('_', $data)[2];
 
-        $progol_system = query("SELECT * FROM `progol_systems` WHERE `group_id`='$group_id' AND `student_id` = '$student_id'")->fetch_all();
 
-        var_dump("SELECT * FROM `progol_systems` WHERE `group_id`='$group_id' AND `student_id` = '$student_id'");
-        $progols = '';
+        $oylar = query("SELECT month(day) FROM `progol_systems` WHERE `group_id`='$group_id' AND `student_id` = '$student_id' GROUP BY month(day) ORDER BY month(day) ASC")->fetch_all();
+
+        $button = [[]];
+        $months_massiv = query("SELECT name, id FROM `months`")->fetch_all();
+
+
+        foreach ($oylar as $result) {
+            $id = $result[0];
+            $oy_name = query("SELECT name, id FROM `months` WHERE id = '$id'")->fetch_assoc()['name'];
+            $button[0][] = ["text" => "🏪 $oy_name", "callback_data" => "checkedMonth_$group_id".'_'."$student_id".'_'."$id"];
+        }
+
+        $button = array_chunk($button[0], 2);
+        $button[array_key_last($button)+1][] = ["text" => '⬅️ Orqaga', "callback_data" => "progolAnMark_$group_id"];
+
+        $b = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup($button);
+
+        $bot->deleteMessage($chat_id, $message_id);
+        $bot->sendMessage($chat_id, "Oylardan birini tanlang", null, false, null, $b);
+    }
+
+    //TANLANGAN OY UCHUN PROGOL SISTEMANI KO'RISH
+    if (strpos($data, 'checkedMonth')!== false){
+        $group_id = explode('_', $data)[1];
+        $student_id = explode('_', $data)[2];
+        $month_id = explode('_', $data)[3];
+
+        $progol_system = query("SELECT * FROM `progol_systems` WHERE `group_id`='$group_id' AND `student_id` = '$student_id' AND MONTH(`day`) = '$month_id' AND YEAR(day) = YEAR(CURDATE()) ORDER BY `day` ASC")->fetch_all();
+
+        $oy_name = query("SELECT name FROM `months` WHERE id = '$month_id'")->fetch_assoc()['name'];
+        $progols = "$oy_name oyi uchun davomat:\n\nSana     Davomat   Baho\n\n";
 
         if (empty($progol_system)){
             $progols .= "❌ Sizda progol sistema mavjud emas ❌";
         }else{
 
             foreach ($progol_system as $key => $item) {
+                $baho = $item['7'] ? "  ".$item['7'] : '➖';
+                $day = date('d',  strtotime($item['1']));
 
-                $baho = $item['7'] ?? '➖';
-                $day = "Sana: ".date('d-M',  strtotime($item['1']));
-
-
-                if ($key == array_key_last($progol_system)){
-                    if ($item['8'] == '1'){
-                        $progols .= $day." Davomat: ❌ Baho: ".$baho."\n";
-                    }else{
-                        $progols .= $day." Davomat: ✅ Baho: ".$baho."\n";
-                    }
+                if ($item['8'] == '0'){
+                    $progols .= $day."              ❌           ".$baho."\n";
                 }else{
-                    if ($item['8'] == '1'){
-                        $progols .= $day." Davomat: ❌ Baho: ".$baho."\n";
-                    }else{
-                        $progols .= $day." Davomat: ✅ Baho: ".$baho."\n";
-                    }
+                    $progols .= $day."              ✅           ".$baho."\n";
                 }
             }
         }
 
-
-        $bot->sendMessage($chat_id, $progols);
+        $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"⬅️ Orqaga", 'callback_data'=>"barchaOylar_$group_id"."_"."$student_id"]]]);
+        $bot->deleteMessage($chat_id,$message_id);
+        $bot->sendMessage($chat_id, $progols, null, false,  null, $btn);
     }
 });
 

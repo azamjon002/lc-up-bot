@@ -114,7 +114,7 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
     if ($textChecker == "Guruhlarim 👥" &&  $user_status == 'login boldi'){
         $user_id = query("SELECT id FROM `users` WHERE `chat_id` = '$chat_id'")->fetch_assoc()['id'];
 
-        $s = query("SELECT students.id FROM students JOIN users ON users.id = students.user_id WHERE users.id = '$user_id'")->fetch_assoc()['id'];
+        $s = query("SELECT students.id FROM students JOIN users ON users.id = students.user_id WHERE users.id    = '$user_id'")->fetch_assoc()['id'];
         $g = query("SELECT group_id FROM group_student WHERE student_id = '$s'")->fetch_all();
 
         $in = '';
