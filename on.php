@@ -109,7 +109,6 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
 
     }
 
-
     //GURUHLAR
     if ($textChecker == "Guruhlarim 👥" &&  $user_status == 'login boldi'){
         $user_id = query("SELECT id FROM `users` WHERE `chat_id` = '$chat_id'")->fetch_assoc()['id'];
