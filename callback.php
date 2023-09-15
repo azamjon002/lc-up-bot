@@ -49,7 +49,36 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
     //PASSWORD EDIT
     if ($data == 'edit_password'){
         query("UPDATE users SET status_for_bot = 'eski password' WHERE chat_id = '$chat_id'");
+        $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"⬅️ Orqaga", 'callback_data'=>'parol_tahrirlashdan_ortga_qaytish']]]);
+        $bot->deleteMessage($chat_id, $message_id);
         $bot->sendMessage($chat_id, 'Eski parolni kiriting', null, false, null, $removeButton);
+        $bot->sendMessage($chat_id, "ℹ️ Parol yodingizdan ko'tarilgan bo'lsa o'quv markaz rahbariyatidan shaxsiy parolingizni o'zgaritirib berishini so'rang ℹ️", null, false, null, $btn);
+    }
+
+    //IF PASSWORD EDIT BACK
+    if ($data == 'parol_tahrirlashdan_ortga_qaytish'){
+        query("UPDATE users SET status_for_bot = 'login boldi' WHERE chat_id = '$chat_id'");
+        $user_name_and_number = query("SELECT name,mobile_number,filial_id FROM users WHERE chat_id = '$chat_id'")->fetch_assoc();
+        $filial_id = $user_name_and_number['filial_id'];
+        $filial_nomi = query("SELECT name FROM filials where id = '$filial_id'")->fetch_assoc()['name'];
+        $fish = $user_name_and_number['name'];
+        $tel_number = $user_name_and_number['mobile_number'];
+
+
+        $text = "👤 FISH: $fish\n📱 Telefon raqam: $tel_number\n🏪 O'quv markazi: $filial_nomi";
+
+        $sozlamar_btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"Parolni o'zgartirish ✏️", 'callback_data'=>'edit_password']],
+            [['text'=>'Hisobdan chiqish ➡️', 'callback_data'=>'logout']]]);
+        $bot->deleteMessage($chat_id, $message_id);
+        $bot->sendMessage($chat_id, $text, 'HTML', false, null, $sozlamar_btn);
+    }
+
+    if ($data == 'eski_parolga_qaytarish'){
+        query("UPDATE users SET status_for_bot = 'eski password' WHERE chat_id = '$chat_id'");
+        $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"⬅️ Orqaga", 'callback_data'=>'parol_tahrirlashdan_ortga_qaytish']]]);
+        $bot->deleteMessage($chat_id, $message_id);
+        $bot->sendMessage($chat_id, 'Eski parolni kiriting', null, false, null, $removeButton);
+        $bot->sendMessage($chat_id, "ℹ️ Parol yodingizdan ko'tarilgan bo'lsa o'quv markaz rahbariyatiga shaxsiy parolingizni o'zgaritirib berishini so'rang ℹ️", null, false, null, $btn);
     }
 
     //GURUHGA KIRISH

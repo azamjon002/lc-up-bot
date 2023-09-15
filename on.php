@@ -3,6 +3,7 @@
 $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $update) use ($bot, $main_menu_btn){
     $textChecker = $update->getMessage()->getText();
     $chat_id = $update->getMessage()->getChat()->getId();
+    $message_id = $update->getMessage()->getMessageId();
     $user_status = query("SELECT status_for_bot FROM users WHERE chat_id= '$chat_id'")->fetch_assoc()['status_for_bot'];
 
 
@@ -91,7 +92,9 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
         $user_hash_password = query("SELECT password FROM users WHERE chat_id = '$chat_id'")->fetch_assoc()['password'];
         if (password_verify($textChecker, $user_hash_password)){
             query("UPDATE users SET status_for_bot = 'yangi password' WHERE chat_id = '$chat_id'");
-            $bot->sendMessage($chat_id, "Yangi parolni kiriting");
+            $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"⬅️ Orqaga", 'callback_data'=>'eski_parolga_qaytarish']]]);
+
+            $bot->sendMessage($chat_id, "Yangi parolni kiriting", null, false, null, $btn);
         }else{
             $bot->sendMessage($chat_id, "❌ Parol xato kiritildi ❌");
         }
