@@ -126,9 +126,9 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
                 $day = date('d-M',  strtotime($item['1']));
 
                 if ($item['8'] == '0'){
-                    $progols .= $day."             ❌           ".$baho."\n";
+                    $progols .= $day."             ❌           ".$baho."\n\n";
                 }else{
-                    $progols .= $day."             ✅           ".$baho."\n";
+                    $progols .= $day."             ✅           ".$baho."\n\n";
                 }
             }
 
@@ -187,9 +187,9 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
                 $day = date('d',  strtotime($item['1']));
 
                 if ($item['8'] == '0'){
-                    $progols .= $day."              ❌           ".$baho."\n";
+                    $progols .= $day."              ❌           ".$baho."\n\n";
                 }else{
-                    $progols .= $day."              ✅           ".$baho."\n";
+                    $progols .= $day."              ✅           ".$baho."\n\n";
                 }
             }
         }
