@@ -82,7 +82,7 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
         $text = "👤 FISH: $fish\n📱 Telefon raqam: $tel_number\n🏪 O'quv markazi: $filial_nomi";
 
         $sozlamar_btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"Parolni o'zgartirish ✏️", 'callback_data'=>'edit_password']],
-            [['text'=>'Chiqish ➡️', 'callback_data'=>'logout']]]);
+            [['text'=>'Hisobdan chiqish ➡️', 'callback_data'=>'logout']]]);
 
         $bot->sendMessage($chat_id, $text, 'HTML', false, null, $sozlamar_btn);
     };
@@ -90,13 +90,14 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
     //PAROLNI TAHRIRLASH
     if ($user_status == 'eski password'){
         $user_hash_password = query("SELECT password FROM users WHERE chat_id = '$chat_id'")->fetch_assoc()['password'];
+        $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"⬅️ Orqaga", 'callback_data'=>'eski_parolga_qaytarish']]]);
+
         if (password_verify($textChecker, $user_hash_password)){
             query("UPDATE users SET status_for_bot = 'yangi password' WHERE chat_id = '$chat_id'");
-            $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"⬅️ Orqaga", 'callback_data'=>'eski_parolga_qaytarish']]]);
 
             $bot->sendMessage($chat_id, "Yangi parolni kiriting", null, false, null, $btn);
         }else{
-            $bot->sendMessage($chat_id, "❌ Parol xato kiritildi ❌");
+            $bot->sendMessage($chat_id, "❌ Parol xato kiritildi ❌", null,false, null, $btn);
         }
     }
 
@@ -119,26 +120,31 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
         $s = query("SELECT students.id FROM students JOIN users ON users.id = students.user_id WHERE users.id    = '$user_id'")->fetch_assoc()['id'];
         $g = query("SELECT group_id FROM group_student WHERE student_id = '$s'")->fetch_all();
 
-        $in = '';
-        foreach ($g as $key => $item) {
-            if ($key == array_key_last($g)){
-                $in .= "'" . implode(',', $item) ."'";
-            }else{
-                $in .= "'" . implode(',', $item) ."',";
+        if (empty($g)){
+            $bot->sendMessage($chat_id, "Siz guruhga qo'shilmagansiz",null, false, null, $b);
+        }else{
+            $in = '';
+            foreach ($g as $key => $item) {
+                if ($key == array_key_last($g)){
+                    $in .= "'" . implode(',', $item) ."'";
+                }else{
+                    $in .= "'" . implode(',', $item) ."',";
+                }
             }
+
+            $groups = query("SELECT id, name FROM `groups` WHERE `id` IN ($in) and `deleted_at` is null")->fetch_all();
+
+            $button = [[]];
+            foreach ($groups as $result) {
+                $button[0][] = ["text" => "🏪 $result[1]", "callback_data" => "group_$result[0]"];
+            }
+            $button = array_chunk($button[0], 2);
+
+            $b = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup($button);
+
+            $bot->sendMessage($chat_id, "Sizning guruhlaringiz",null, false, null, $b);
         }
 
-        $groups = query("SELECT id, name FROM `groups` WHERE `id` IN ($in) and `deleted_at` is null")->fetch_all();
-
-        $button = [[]];
-        foreach ($groups as $result) {
-            $button[0][] = ["text" => "🏪 $result[1]", "callback_data" => "group_$result[0]"];
-        }
-        $button = array_chunk($button[0], 2);
-
-        $b = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup($button);
-
-        $bot->sendMessage($chat_id, "Sizning guruhlaringiz",null, false, null, $b);
     }
 
 });

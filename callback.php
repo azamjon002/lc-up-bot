@@ -1,7 +1,7 @@
 <?php
 
 
-$bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callbackQuery) use ($bot, $removeButton){
+$bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callbackQuery) use ($bot, $removeButton, $main_menu_btn){
 
     $chat_id = $callbackQuery->getMessage()->getChat()->getId();
     $data = $callbackQuery->getData();
@@ -70,6 +70,7 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
         $sozlamar_btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"Parolni o'zgartirish ✏️", 'callback_data'=>'edit_password']],
             [['text'=>'Hisobdan chiqish ➡️', 'callback_data'=>'logout']]]);
         $bot->deleteMessage($chat_id, $message_id);
+        $bot->sendMessage($chat_id,"Sizning shaxsiy ma'lumotlaringiz", null, false, null, $main_menu_btn);
         $bot->sendMessage($chat_id, $text, 'HTML', false, null, $sozlamar_btn);
     }
 
