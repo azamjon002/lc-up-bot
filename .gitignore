@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-./session
-=======
 /session
 /config.php
 /.idea
->>>>>>> ff26aab8b8420b65acafbc2079d370d0f311f8cf
+/database.php
