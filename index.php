@@ -18,8 +18,8 @@ include 'command.php';
 include 'callback.php';
 
 include 'on.php';
-try {
 
+try {
     $bot->run();
 }catch (Exception $exception){
 
