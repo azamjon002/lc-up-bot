@@ -28,7 +28,7 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
     //LOGOUT
     if (strpos($data, 'logout') !== false){
         $userId = explode('_', $data)[1];
-        $chatIds = query("SELECT chat_ids_bot FROM users WHERE users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'")->fetch_assoc()['chat_ids_bot'];
+        $chatIds = query("SELECT chat_ids_bot, JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS FROM users WHERE users.chat_ids_bot LIKE '%$chat_id%'")->fetch_assoc()['chat_ids_bot'];
 
         $jsonMassiv = json_decode($chatIds);
 
@@ -47,7 +47,7 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
                 }else{
                     $str .= '{"status": "'.$item->status.'", "chat_id" : "'.$item->chat_id.'"},';
                 }
-           }
+            }
 
             $string = '{"data" : ['.$str.']}';
 
@@ -71,7 +71,7 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
     //IF PASSWORD EDIT BACK
     if ($data == 'parol_tahrirlashdan_ortga_qaytish'){
         updateStatus($chat_id, 'login boldi');
-        $user_name_and_number = query("SELECT name,mobile_number,filial_id FROM users WHERE users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'")->fetch_assoc();
+        $user_name_and_number = query("SELECT name,mobile_number,filial_id, JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS FROM users WHERE users.chat_ids_bot LIKE '%$chat_id%'")->fetch_assoc();
         $filial_id = $user_name_and_number['filial_id'];
         $filial_nomi = query("SELECT name FROM filials where id = '$filial_id'")->fetch_assoc()['name'];
         $fish = $user_name_and_number['name'];
@@ -232,4 +232,3 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
         $bot->sendMessage($chat_id, $progols, null, false,  null, $btn);
     }
 });
-

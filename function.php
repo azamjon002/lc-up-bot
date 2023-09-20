@@ -13,8 +13,7 @@ function insertChatIds($chat_id, $user_id, $hash_writeable_chatId =false){
     }
 }
 function getStatus($chat_id){
-    $has_login = query("SELECT JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS FROM users WHERE users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'")->fetch_assoc()['STATUS'];
-
+    $has_login = query("SELECT JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS FROM users WHERE users.chat_ids_bot  LIKE '%$chat_id%'")->fetch_assoc()['STATUS'];
     $status_array = json_decode($has_login);
     $userStatus = '';
     foreach ($status_array as $item) {
@@ -27,7 +26,7 @@ function getStatus($chat_id){
 }
 
 function getChatId($chat_id){
-    $has_login = query("SELECT JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS FROM users WHERE users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'")->fetch_assoc()['STATUS'];
+    $has_login = query("SELECT JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS FROM users WHERE users.chat_ids_bot LIKE '%$chat_id%'")->fetch_assoc()['STATUS'];
 
     $status_array = json_decode($has_login);
     $userStatus = '';
@@ -41,7 +40,7 @@ function getChatId($chat_id){
 }
 
 function updateStatus($chat_id, $status){
-    $has_login = query("SELECT JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS FROM users WHERE users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'")->fetch_assoc()['STATUS'];
+    $has_login = query("SELECT JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS FROM users WHERE users.chat_ids_bot  LIKE '%$chat_id%'")->fetch_assoc()['STATUS'];
     $jsonArray = json_decode($has_login);
 
     foreach ($jsonArray as $key=> $item) {

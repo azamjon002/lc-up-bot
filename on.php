@@ -94,7 +94,7 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
     if ($textChecker == 'Profilim 👤' && $user_status == 'login boldi'){
         $hasSessionStudentId = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
 
-        $user_name_and_number = query("SELECT * FROM users WHERE users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'")->fetch_assoc();
+        $user_name_and_number = query("SELECT JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS,name,mobile_number,id FROM users WHERE users.chat_ids_bot LIKE '%$chat_id%'")->fetch_assoc();
         $filials = query("SELECT s.filial_id, f.name FROM students s join filials f ON f.id = s.filial_id where s.id = '$hasSessionStudentId'")->fetch_assoc();
         $filial_id = $filials['id'];
         $filial_nomi = $filials['name'];
@@ -112,7 +112,7 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
 
     //PAROLNI TAHRIRLASH
     if ($user_status == 'eski password'){
-        $user_hash_password = query("SELECT password FROM users WHERE users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'")->fetch_assoc()['password'];
+        $user_hash_password = query("SELECT JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS, password FROM users WHERE users.chat_ids_bot LIKE '%$chat_id%'")->fetch_assoc()['password'];
 
         $btn = backBtn('eski_parolga_qaytarish');
 
@@ -129,7 +129,7 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
         if (strlen($textChecker) >= 4 ){
             updateStatus($chat_id, 'login boldi');
             $new_hash_password = password_hash($textChecker, PASSWORD_BCRYPT);
-            query("UPDATE users SET password = '$new_hash_password' WHERE  users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'");
+            query("UPDATE users SET password = '$new_hash_password' WHERE  users.chat_ids_bot LIKE '%$chat_id%'");
             $bot->sendMessage($chat_id, '✅ Parol muaffaqiyatli tahrirlandi ✅', null, false, null, $main_menu_btn);
         }else{
             $bot->sendMessage($chat_id, "⭕️ Parol 4 ta ishoradan kam bo'lmasligi kerak");
@@ -167,5 +167,4 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
     }
 
 });
-
 

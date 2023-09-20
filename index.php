@@ -19,4 +19,8 @@ include 'callback.php';
 
 include 'on.php';
 
-$bot->run();
+try {
+    $bot->run();
+}catch (Exception $exception){
+
+}
