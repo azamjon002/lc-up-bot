@@ -20,7 +20,9 @@ include 'callback.php';
 include 'on.php';
 
 try {
+
     $bot->run();
+
 }catch (Exception $exception){
 
 }
