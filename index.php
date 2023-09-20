@@ -25,3 +25,8 @@ try {
 
 }
 
+try {
+    $bot->run();
+}catch (Exception $exception){
+
+}

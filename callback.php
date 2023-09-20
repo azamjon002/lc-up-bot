@@ -47,7 +47,7 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
                 }else{
                     $str .= '{"status": "'.$item->status.'", "chat_id" : "'.$item->chat_id.'"},';
                 }
-           }
+            }
 
             $string = '{"data" : ['.$str.']}';
 
@@ -232,5 +232,3 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
         $bot->sendMessage($chat_id, $progols, null, false,  null, $btn);
     }
 });
-
-

@@ -168,5 +168,3 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
 
 });
 
-
-

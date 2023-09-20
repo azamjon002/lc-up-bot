@@ -14,7 +14,6 @@ function insertChatIds($chat_id, $user_id, $hash_writeable_chatId =false){
 }
 function getStatus($chat_id){
     $has_login = query("SELECT JSON_EXTRACT(chat_ids_bot, '$.data[*]') AS STATUS FROM users WHERE users.chat_ids_bot  LIKE '%$chat_id%'")->fetch_assoc()['STATUS'];
-
     $status_array = json_decode($has_login);
      
     var_dump($status_array);
