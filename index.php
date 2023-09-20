@@ -6,6 +6,7 @@ require_once 'database.php';
 require_once 'inlineBtn.php';
 require_once 'replyBtn.php';
 require_once 'config.php';
+require_once 'function.php';
 
 /**
  * @var $bot \TelegramBot\Api\Client | \TelegramBot\Api\BotApi
