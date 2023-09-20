@@ -134,6 +134,7 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
         $bot->sendMessage($chat_id, $text, null, false, null, $btn);
     }
 
+
     //DAVOMAT SHU OY UCHUN
     if (strpos($data, 'progolAnMark') !== false){
         $group_id = explode('_', $data)[1];
