@@ -1,6 +1,5 @@
 <?php
 
-ini_set('display_errors',1);
 require 'vendor/autoload.php';
 require_once 'database.php';
 require_once 'inlineBtn.php';
@@ -19,5 +18,10 @@ include 'command.php';
 include 'callback.php';
 
 include 'on.php';
+try {
 
-$bot->run();
+    $bot->run();
+}catch (Exception $exception){
+
+}
+

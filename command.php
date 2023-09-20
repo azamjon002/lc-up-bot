@@ -1,4 +1,4 @@
-<?php
+kk<?php
 
 $bot->command('start', function (\TelegramBot\Api\Types\Message $message)
 use ($bot, $request_contact, $main_menu_btn)
@@ -8,6 +8,7 @@ use ($bot, $request_contact, $main_menu_btn)
     $first_name = $message->getChat()->getFirstName();
 
     $has_login = getStatus($chat_id);
+
 
     if ($has_login != ''){
          updateStatus($chat_id, 'login boldi');
@@ -19,3 +20,4 @@ use ($bot, $request_contact, $main_menu_btn)
         $bot->sendMessage($chat_id,"Telefon raqamni kiriting\nNa'muna: 998991234455", 'HTML',false,null, $request_contact);
     }
 });
+
