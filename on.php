@@ -4,49 +4,60 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
     $textChecker = $update->getMessage()->getText();
     $chat_id = $update->getMessage()->getChat()->getId();
     $message_id = $update->getMessage()->getMessageId();
-    $user_status = query("SELECT status_for_bot FROM users WHERE chat_id= '$chat_id'")->fetch_assoc()['status_for_bot'];
-
+    $user_status = getStatus($chat_id);
 
     //LOGIN
-    if (!$user_status){
+    if ($user_status == ''){
         if (!file_exists("session/$chat_id.txt")){
             if ($textChecker) {
-                $telefon_raqam = $textChecker;
+                $telefon_raqam = preg_replace('/[^0-9]/', '', $textChecker);
             }else {
                 $number = $update->getMessage()->getContact()->getPhoneNumber();
-                $telefon_raqam = str_replace('+', '', $number);
+                $telefon_raqam = preg_replace('/[^0-9]/', '', $number);
             }
 
-            $is_number = preg_match("/^[0-9]+$/", $telefon_raqam);
-            if ($is_number && strlen($telefon_raqam) == 12){
+            if (strlen($telefon_raqam) == 12){
+
+                $back = backBtn('mobile_number_tasdiqlashga_qaytish');
 
                 $bazada_bor = query("SELECT mobile_number FROM users where mobile_number = $telefon_raqam and deleted_at is null")->num_rows;
 
                 if ($bazada_bor == 1 ){
-                    $user_id = query("SELECT id FROM users where mobile_number = $telefon_raqam")->fetch_assoc()['id'];
-                    $myfile = fopen("session/$chat_id.txt", "w+");
-                    fwrite($myfile, "user_id=" . $user_id . ";");
-                    fclose($myfile);
-                    $bot->sendMessage($chat_id, "Muaffaqiyatli ✅ \nParolni kiriting");
+                    $userID = query("SELECT id FROM users where mobile_number = '$telefon_raqam' and deleted_at is null")->fetch_assoc()['id'];
+                    $student_id = query("SELECT id FROM students WHERE user_id = '$userID' and deleted_at is null")->fetch_assoc()['id'];
+                    if ($student_id){
+                        $myfile = fopen("session/$chat_id.txt", "w+");
+                        fwrite($myfile, "student_id=" . $student_id . ";");
+                        fclose($myfile);
+                        $bot->sendMessage($chat_id, "Muaffaqiyatli ✅ \nParolni kiriting", null, false, null, $back);
+                    }else{
+                        $bot->sendMessage($chat_id, "❌ Ushbu raqam dasturda mavjud emas ❌", null, false, null, $back);
+                    }
                 }
 
                 elseif ($bazada_bor == 0){
-                    $bot->sendMessage($chat_id, "Ushbu raqam dasturda mavjud emas ❌");
+                    $bot->sendMessage($chat_id, "❌ Ushbu raqam dasturda mavjud emas ❌", null, false, null, $back);
                 }
 
                 else{
-                    $users_massiv = query("SELECT * FROM users where mobile_number = $telefon_raqam and deleted_at is null")->fetch_all();
+                    $users_massiv = query("SELECT id FROM users where mobile_number = $telefon_raqam and deleted_at is null")->fetch_all();
 
-                    $button = [[]];
-                    foreach ($users_massiv as $result) {
-                        $center_id = query("SELECT center_id FROM filials where id = $result[16] and deleted_at is null")->fetch_assoc()['center_id'];
-                        $center_name = query("SELECT name FROM centers where id='$center_id'")->fetch_assoc()['name'];
-                        $button[0][] = ["text" => "$result[1] ➡️ $center_name", "callback_data" => "userId_$result[0]_$telefon_raqam"];
+                    $in = createSqlIn($users_massiv);
+                    $students_massiv = query("SELECT name,filial_id,id FROM students WHERE `user_id` IN ($in) and deleted_at is null")->fetch_all();
+
+                    if (!empty($students_massiv)){
+                        $button = [[]];
+                        foreach ($students_massiv as $result) {
+                            $filial_name = query("SELECT name FROM filials where id = $result[1] and deleted_at is null")->fetch_assoc()['name'];
+                            $button[0][] = ["text" => "$result[0] ➡️ $filial_name", "callback_data" => "studentId_$result[2]"];
+                        }
+                        $button = array_chunk($button[0], 1);
+                        $users_btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup($button);
+
+                        $bot->sendMessage($chat_id, "Ushbu raqamdan bir nechta foydalanuvchi ro'yhatdan o'tgan. Siz kimsiz ?", "HTML", false, null,$users_btn);
+                    }else{
+                        $bot->sendMessage($chat_id,"Siz hodim sifatida ro'yhatdan o'tkansiz. Sizda ushbu botdan foydalanish imkoniyati mavjud emas!", null, false, null,$back);
                     }
-                    $button = array_chunk($button[0], 1);
-                    $users_btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup($button);
-
-                    $bot->sendMessage($chat_id, "Ushbu raqamdan bir nechta foydalanuvchi ro'yhatdan o'tgan. Siz kimsiz ?", "HTML", false, null,$users_btn);
                 }
             }else{
                 $bot->sendMessage($chat_id, "Telefon raqam xato kiritildi ❌ Na'munaga qarang");
@@ -54,12 +65,21 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
 
         }else{
             // PAROL KELSA
-            $hasSessionUserId = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
-            $hash_password = query("SELECT password FROM users where id = $hasSessionUserId")->fetch_assoc()['password'];
+            $hasSessionStudentId = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
+
+            $user = query("SELECT u.id, u.password FROM users u join students s ON s.user_id = u.id where s.id = $hasSessionStudentId")->fetch_assoc();
+
+            $hash_password = $user['password'];
+            $user_id = $user['id'];
 
             if (password_verify($textChecker, $hash_password)){
-                query("UPDATE users SET chat_id = '$chat_id', status_for_bot = 'login boldi' WHERE id ='$hasSessionUserId'");
+                $hash_writeable_chatId = query("SELECT chat_ids_bot FROM users WHERE id = $user_id")->fetch_assoc()['chat_ids_bot'];
 
+                if ($hash_writeable_chatId){
+                    insertChatIds($chat_id, $user_id, $hash_writeable_chatId);
+                }else{
+                    insertChatIds($chat_id, $user_id);
+                }
                 $bot->sendMessage($chat_id, "Hush kelibsiz!",'HTML');
                 $bot->sendMessage($chat_id, "O'zingizga kerakli menyulardan birini tanlang!",'HTML', false, null,  $main_menu_btn);
             }else{
@@ -69,31 +89,35 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
     }
 
 
+
     //PROFILIM
     if ($textChecker == 'Profilim 👤' && $user_status == 'login boldi'){
+        $hasSessionStudentId = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
 
-        $user_name_and_number = query("SELECT name,mobile_number,filial_id FROM users WHERE chat_id = '$chat_id'")->fetch_assoc();
-        $filial_id = $user_name_and_number['filial_id'];
-        $filial_nomi = query("SELECT name FROM filials where id = '$filial_id'")->fetch_assoc()['name'];
+        $user_name_and_number = query("SELECT * FROM users WHERE users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'")->fetch_assoc();
+        $filials = query("SELECT s.filial_id, f.name FROM students s join filials f ON f.id = s.filial_id where s.id = '$hasSessionStudentId'")->fetch_assoc();
+        $filial_id = $filials['id'];
+        $filial_nomi = $filials['name'];
         $fish = $user_name_and_number['name'];
         $tel_number = $user_name_and_number['mobile_number'];
-
+        $userId = $user_name_and_number['id'];
 
         $text = "👤 FISH: $fish\n📱 Telefon raqam: $tel_number\n🏪 O'quv markazi: $filial_nomi";
 
         $sozlamar_btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"Parolni o'zgartirish ✏️", 'callback_data'=>'edit_password']],
-            [['text'=>'Hisobdan chiqish ➡️', 'callback_data'=>'logout']]]);
+            [['text'=>'Hisobdan chiqish ➡️', 'callback_data'=>"logout_$userId"]]]);
 
         $bot->sendMessage($chat_id, $text, 'HTML', false, null, $sozlamar_btn);
     };
 
     //PAROLNI TAHRIRLASH
     if ($user_status == 'eski password'){
-        $user_hash_password = query("SELECT password FROM users WHERE chat_id = '$chat_id'")->fetch_assoc()['password'];
-        $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"⬅️ Orqaga", 'callback_data'=>'eski_parolga_qaytarish']]]);
+        $user_hash_password = query("SELECT password FROM users WHERE users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'")->fetch_assoc()['password'];
+
+        $btn = backBtn('eski_parolga_qaytarish');
 
         if (password_verify($textChecker, $user_hash_password)){
-            query("UPDATE users SET status_for_bot = 'yangi password' WHERE chat_id = '$chat_id'");
+            updateStatus($chat_id, 'yangi password');
 
             $bot->sendMessage($chat_id, "Yangi parolni kiriting", null, false, null, $btn);
         }else{
@@ -103,9 +127,9 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
 
     if ($user_status == 'yangi password'){
         if (strlen($textChecker) >= 4 ){
-            query("UPDATE users SET status_for_bot = 'login boldi' WHERE chat_id = '$chat_id'");
+            updateStatus($chat_id, 'login boldi');
             $new_hash_password = password_hash($textChecker, PASSWORD_BCRYPT);
-            query("UPDATE users SET password = '$new_hash_password' WHERE chat_id = '$chat_id'");
+            query("UPDATE users SET password = '$new_hash_password' WHERE  users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'");
             $bot->sendMessage($chat_id, '✅ Parol muaffaqiyatli tahrirlandi ✅', null, false, null, $main_menu_btn);
         }else{
             $bot->sendMessage($chat_id, "⭕️ Parol 4 ta ishoradan kam bo'lmasligi kerak");
@@ -115,22 +139,17 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
 
     //GURUHLAR
     if ($textChecker == "Guruhlarim 👥" &&  $user_status == 'login boldi'){
-        $user_id = query("SELECT id FROM `users` WHERE `chat_id` = '$chat_id'")->fetch_assoc()['id'];
+//        $user_id = query("SELECT id FROM `users` WHERE  users.chat_ids_bot->>'$.data[*].chat_id' LIKE '%$chat_id%'")->fetch_assoc()['id'];
 
-        $s = query("SELECT students.id FROM students JOIN users ON users.id = students.user_id WHERE users.id    = '$user_id'")->fetch_assoc()['id'];
+//        $s = query("SELECT students.id FROM students JOIN users ON users.id = students.user_id WHERE users.id = '$user_id'")->fetch_assoc()['id'];
+        $s = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
+
         $g = query("SELECT group_id FROM group_student WHERE student_id = '$s'")->fetch_all();
 
         if (empty($g)){
             $bot->sendMessage($chat_id, "Siz guruhga qo'shilmagansiz",null, false, null, $b);
         }else{
-            $in = '';
-            foreach ($g as $key => $item) {
-                if ($key == array_key_last($g)){
-                    $in .= "'" . implode(',', $item) ."'";
-                }else{
-                    $in .= "'" . implode(',', $item) ."',";
-                }
-            }
+            $in = createSqlIn($g);
 
             $groups = query("SELECT id, name FROM `groups` WHERE `id` IN ($in) and `deleted_at` is null")->fetch_all();
 
