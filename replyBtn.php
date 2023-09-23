@@ -3,5 +3,5 @@ $request_contact = new \TelegramBot\Api\Types\ReplyKeyboardMarkup([[['text' => "
 $removeButton = new \TelegramBot\Api\Types\ReplyKeyboardRemove(true);
 
 $main_menu_btn = new \TelegramBot\Api\Types\ReplyKeyboardMarkup([
-    [['text' => 'Guruhlarim 👥'], ['text' => 'Profilim 👤']]
+    [['text' => 'Guruhlarim 👥'], ['text' => 'Profilim 👤']],[['text'=>"To'lovlarim 💵"], ['text'=>"SMSlar tarixi 📨"]]
 ], false, true);

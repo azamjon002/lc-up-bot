@@ -89,7 +89,6 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
     }
 
 
-
     //PROFILIM
     if ($textChecker == 'Profilim 👤' && $user_status == 'login boldi'){
         $hasSessionStudentId = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
@@ -162,6 +161,48 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
             $b = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup($button);
 
             $bot->sendMessage($chat_id, "Sizning guruhlaringiz",null, false, null, $b);
+        }
+
+    }
+
+    //TO'LOVLAR
+    if ($textChecker == "To'lovlarim 💵" &&  $user_status == 'login boldi'){
+        $s = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
+
+        $tolovlarMassiv = query("SELECT t.*, gr.name FROM `tolovlars` t inner join `groups` gr ON gr.id = t.group_id WHERE t.student_id = '$s' and t.summa > 0 and t.deleted_at is null")->fetch_all();
+
+        if (count($tolovlarMassiv)>0){
+            foreach ($tolovlarMassiv as $item){
+                $summa = number_format($item[2]);
+                $sana = $item[3];
+                $group = $item[11];
+                $text = "💵 Summa: $summa\n📆 Sana: $sana\n👥 Guruh: $group";
+
+                $bot->sendMessage($chat_id, $text);
+            }
+        }else{
+            $bot->sendMessage($chat_id,"Sizda to'lovlar mavjud emas ☹️\nMenyulardan boshqasini tanlang 👇");
+        }
+
+
+    }
+
+    //SMSlar TARIXI
+    if ($textChecker == "SMSlar tarixi 📨" &&  $user_status == 'login boldi'){
+        $s = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
+
+        $tolovlarMassiv = query("SELECT m.* FROM `messages` m WHERE m.messagable_id = '$s' and m.status = 'ha'")->fetch_all();
+
+        if (count($tolovlarMassiv)>0){
+            foreach ($tolovlarMassiv as $item){
+                $sms = $item[0];
+                $sana = $item[4];
+                $text = "📆 Sana: $sana\n\n $sms";
+
+                $bot->sendMessage($chat_id, $text);
+            }
+        }else{
+            $bot->sendMessage($chat_id, "Sizda SMS lar mavjud emas ☹️\nMenyulardan boshqasini tanlang 👇");
         }
 
     }
