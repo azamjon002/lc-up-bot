@@ -220,11 +220,16 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
             $in = createSqlIn($g);
             $groups = query("SELECT id, name, cost FROM `groups` WHERE `id` IN ($in) and `deleted_at` is null")->fetch_all();
 
+            $str = "App\\\Models\\\Student";
 
-            var_dump($groups);
+            $kashalok = query("SELECT SUM(summa) as balans FROM `kashaloks` WHERE `kashalokable_id` = '$student_id' AND `kashalokable_type`= '$str'")->fetch_assoc()['balans'];
+
 
             $is_jarima_required = query("SELECT sozlamalars.summa_for_count FROM sozlamalars join centers ON centers.id = sozlamalars.center_id join filials ON filials.center_id = centers.id join students ON students.filial_id = filials.id WHERE students.id = '$student_id'")->fetch_assoc();
             $summa = $is_jarima_required['summa_for_count'];
+
+            $textStr = "Sizning hozirgi balansingiz: ".number_format($kashalok);
+            $bot->sendMessage($chat_id, $textStr);
 
             foreach ($groups as $result) {
                 $group_id = $result[0];
