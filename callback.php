@@ -1,11 +1,12 @@
 <?php
 
 
-$bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callbackQuery) use ($bot, $removeButton, $main_menu_btn){
+$bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callbackQuery) use ($bot, $removeButton){
 
     $chat_id = $callbackQuery->getMessage()->getChat()->getId();
     $data = $callbackQuery->getData();
     $message_id = $callbackQuery->getMessage()->getMessageId();
+    $main_menu_btn = getMainMenuBtn($chat_id);
 
     //AGAR TELEFON RAQAM BOYICHA USER 1 DAN KO'P BO'LSA VA ULARDAN BIRINI TANLASA
     if (strpos($data, 'studentId') !== false){
@@ -100,10 +101,24 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
     //GURUHGA KIRISH
     if (strpos($data, 'group')!== false){
         $group_id = explode('_', $data)[1];
+        $student_id = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
 
+        $is_jarima_required = query("SELECT sozlamalars.jarima_ball_required, sozlamalars.summa_for_count FROM sozlamalars join centers ON centers.id = sozlamalars.center_id join filials ON filials.center_id = centers.id join students ON students.filial_id = filials.id WHERE students.id = '$student_id'")->fetch_assoc();
         $bot->deleteMessage($chat_id,$message_id);
-        $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"ℹ️ Ma'lumotlar", 'callback_data'=>"info_$group_id"],['text'=>"Davomat & Baholar", 'callback_data'=>"progolAnMark_$group_id"]]]);
-        $bot->sendMessage($chat_id, "Kerakli bo'limlardan birini tanlang", null, false, null, $btn);
+
+        $buttons = [[]];
+        $buttons[0][] = ['text'=>"ℹ️ Ma'lumotlar", 'callback_data'=>"info_$group_id"];
+        $buttons[0][] = ['text'=>"☑️ Davomat & Baholar", 'callback_data'=>"progolAnMark_$group_id"];
+
+        if ($is_jarima_required['jarima_ball_required'] == 'ha'){
+            $summa = $is_jarima_required['summa_for_count'];
+            $buttons[0][] = ['text'=>"📛 Jarimalar & Rag'batlantirishlar 🌟", 'callback_data'=>"jarima_$group_id"."_".$student_id."_".$summa];
+        }
+
+        $buttons = array_chunk($buttons[0], 2);
+        $b = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup($buttons);
+
+        $bot->sendMessage($chat_id, "Kerakli bo'limlardan birini tanlang", null, false, null, $b);
     }
 
     //GURUH MALUMOTLARI
@@ -231,5 +246,44 @@ $bot->callbackQuery(static function(\TelegramBot\Api\Types\CallbackQuery $callba
         $btn = new \TelegramBot\Api\Types\Inline\InlineKeyboardMarkup([[['text'=>"⬅️ Orqaga", 'callback_data'=>"barchaOylar_$group_id"."_"."$student_id"]]]);
         $bot->deleteMessage($chat_id,$message_id);
         $bot->sendMessage($chat_id, $progols, null, false,  null, $btn);
+    }
+
+    //JARIMALARNI KORISH
+    if (strpos($data, 'jarima')!== false){
+        $group_id = explode('_', $data)[1];;
+        $student_id = explode('_', $data)[2];;
+        $summa = explode('_', $data)[3];;
+
+        $balls = query("SELECT count, day FROM balls WHERE student_id = '$student_id' and group_id = '$group_id' and MONTH(day) = MONTH(now()) and YEAR(day) = YEAR(now())")->fetch_all();
+
+
+
+        $jarimas_str = "Sizning jarimalaringiz:🙅‍♂️🙅‍♂️🙅‍♂️\n";
+        $jarima_count = 0;
+        $ragbat_str = "Sizning rag'batlaringiz:🙅‍♂️🙅‍♂️🙅‍♂️\n";
+        $ragbat_count = 0;
+
+        foreach ($balls as $ball) {
+            if ($ball[0]<0){
+                $jarimas_str = str_replace('🙅‍♂️🙅‍♂️🙅‍♂️','', $jarimas_str);
+                $jarimas_str.=$ball[1].': '.$ball[0].PHP_EOL;
+                $jarima_count-=$ball[0];
+            }else{
+                $ragbat_str = str_replace('🙅‍♂️🙅‍♂️🙅‍♂️','', $ragbat_str);
+                $ragbat_str.=$ball[1].': '.$ball[0].PHP_EOL;
+                $ragbat_count+=$ball[0];
+            }
+        }
+
+        $umumiy = (-$jarima_count+$ragbat_count)*intval($summa);
+        if ($umumiy>0){
+            $hisobKitob = "😊 Sizda keyingi oy uchun rag'bat: ".number_format($umumiy)."😊";
+        }else{
+            $hisobKitob = "☹️ Sizda keyingi oy uchun jarima: ".number_format($umumiy)."☹️";
+        }
+
+        $bot->sendMessage($chat_id, $ragbat_str);
+        $bot->sendMessage($chat_id, $jarimas_str);
+        $bot->sendMessage($chat_id,$hisobKitob);
     }
 });

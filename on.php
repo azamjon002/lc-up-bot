@@ -1,11 +1,11 @@
 <?php
 
-$bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $update) use ($bot, $main_menu_btn){
+$bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $update) use ($bot){
     $textChecker = $update->getMessage()->getText();
     $chat_id = $update->getMessage()->getChat()->getId();
     $message_id = $update->getMessage()->getMessageId();
     $user_status = getStatus($chat_id);
-
+    $main_menu_btn = getMainMenuBtn($chat_id);
     //LOGIN
     if ($user_status == ''){
         if (!file_exists("session/$chat_id.txt")){
@@ -143,7 +143,7 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
 //        $s = query("SELECT students.id FROM students JOIN users ON users.id = students.user_id WHERE users.id = '$user_id'")->fetch_assoc()['id'];
         $s = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
 
-        $g = query("SELECT group_id FROM group_student WHERE student_id = '$s'")->fetch_all();
+        $g = query("SELECT group_id FROM group_student WHERE student_id = '$s' and `deleted_at` is null")->fetch_all();
 
         if (empty($g)){
             $bot->sendMessage($chat_id, "Siz guruhga qo'shilmagansiz",null, false, null, $b);
@@ -205,6 +205,56 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
             $bot->sendMessage($chat_id, "Sizda SMS lar mavjud emas ☹️\nMenyulardan boshqasini tanlang 👇");
         }
 
+    }
+
+
+
+    //KEYINGI OY UCHUN TOLOVLARNI HISOBLAB BERISH
+    if ($textChecker == "💵 Keyingi oy uchun to'lov hisobi 💵" &&  $user_status == 'login boldi'){
+        $student_id = str_replace(';','',explode("=", file_get_contents("session/$chat_id.txt"))[1]);
+        $g = query("SELECT group_id FROM group_student WHERE student_id = '$student_id' and `deleted_at` is null")->fetch_all();
+
+        if (empty($g)){
+            $bot->sendMessage($chat_id, "Siz guruhga qo'shilmagansiz",null, false, null, $b);
+        }else {
+            $in = createSqlIn($g);
+            $groups = query("SELECT id, name, cost FROM `groups` WHERE `id` IN ($in) and `deleted_at` is null")->fetch_all();
+
+
+            var_dump($groups);
+
+            $is_jarima_required = query("SELECT sozlamalars.summa_for_count FROM sozlamalars join centers ON centers.id = sozlamalars.center_id join filials ON filials.center_id = centers.id join students ON students.filial_id = filials.id WHERE students.id = '$student_id'")->fetch_assoc();
+            $summa = $is_jarima_required['summa_for_count'];
+
+            foreach ($groups as $result) {
+                $group_id = $result[0];
+                $balls = query("SELECT count, day FROM balls WHERE student_id = '$student_id' and group_id = '$group_id' and MONTH(day) = MONTH(now()) and YEAR(day) = YEAR(now())")->fetch_all();
+
+                $jarima_count = 0;
+                $ragbat_count = 0;
+
+                foreach ($balls as $ball) {
+                    if ($ball[0]<0){
+                        $jarima_count+=$ball[0];
+                    }else{
+                        $ragbat_count+=$ball[0];
+                    }
+                }
+
+                $umumiy = ($jarima_count+$ragbat_count)*intval($summa);
+                $guruh_cost = number_format($result[2]);
+                $viewJarima = number_format($jarima_count*intval($summa));
+                $viewRagbat = number_format($ragbat_count*intval($summa));
+
+
+                $cost = intval($result[2]) + ($umumiy);
+
+                $str = "👥 Guruh $result[1] summasi: $guruh_cost so'm\n📛 Jarimalar: $viewJarima\n🌟 Rag'batlar:$viewRagbat\n\n💰 Keyingi oy uchun to'lanishi kerak bo'lgan summa: ".number_format($cost);
+
+                $bot->sendMessage($chat_id, $str);
+            }
+
+        }
     }
 
 });

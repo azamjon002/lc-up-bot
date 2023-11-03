@@ -1,7 +1,7 @@
 <?php
 
 $bot->command('start', function (\TelegramBot\Api\Types\Message $message)
-use ($bot, $request_contact, $main_menu_btn)
+use ($bot, $request_contact)
 
 {
     $chat_id = $message->getChat()->getId();
@@ -9,6 +9,7 @@ use ($bot, $request_contact, $main_menu_btn)
 
     $has_login = getStatus($chat_id);
 
+    $main_menu_btn = getMainMenuBtn($chat_id);
 
     if ($has_login != ''){
         updateStatus($chat_id, 'login boldi');
