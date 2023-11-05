@@ -225,8 +225,9 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
             $kashalok = query("SELECT SUM(summa) as balans FROM `kashaloks` WHERE `kashalokable_id` = '$student_id' AND `kashalokable_type`= '$str'")->fetch_assoc()['balans'];
 
 
-            $is_jarima_required = query("SELECT sozlamalars.summa_for_count FROM sozlamalars join centers ON centers.id = sozlamalars.center_id join filials ON filials.center_id = centers.id join students ON students.filial_id = filials.id WHERE students.id = '$student_id'")->fetch_assoc();
+            $is_jarima_required = query("SELECT sozlamalars.summa_for_count, sozlamalars.tolov_qilinmaganligidan_jarima  FROM sozlamalars join centers ON centers.id = sozlamalars.center_id join filials ON filials.center_id = centers.id join students ON students.filial_id = filials.id WHERE students.id = '$student_id'")->fetch_assoc();
             $summa = $is_jarima_required['summa_for_count'];
+            $summa_jarima_tolov = $is_jarima_required['tolov_qilinmaganligidan_jarima'];
 
             $textStr = "Sizning hozirgi balansingiz: ".number_format($kashalok);
             $bot->sendMessage($chat_id, $textStr);
@@ -234,6 +235,10 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
             foreach ($groups as $result) {
                 $group_id = $result[0];
                 $balls = query("SELECT count, day FROM balls WHERE student_id = '$student_id' and group_id = '$group_id' and MONTH(day) = MONTH(now()) and YEAR(day) = YEAR(now())")->fetch_all();
+
+                if ($summa_jarima_tolov!==null){
+                    $jarimas = query("SELECT SUM(count) as summa FROM `jarimas` WHERE `student_id`= $student_id and `group_id`=$group_id and MONTH(day) = MONTH(now()) and YEAR(day) = YEAR(now())")->fetch_assoc()['summa'];
+                }
 
                 $jarima_count = 0;
                 $ragbat_count = 0;
@@ -246,15 +251,20 @@ $bot->on(static function (){}, static function(\TelegramBot\Api\Types\Update $up
                     }
                 }
 
-                $umumiy = ($jarima_count+$ragbat_count)*intval($summa);
+                $umumiy = ($jarima_count+$ragbat_count)*intval($summa) + $jarimas;
+
                 $guruh_cost = number_format($result[2]);
                 $viewJarima = number_format($jarima_count*intval($summa));
                 $viewRagbat = number_format($ragbat_count*intval($summa));
+                $qoshimcha_jarimas= number_format($jarimas);
 
+//                if ($umumiy > 0){
+//                    $cost = intval($result[2]) - ($umumiy);
+//                }else{
+//                }
+                $cost = intval($result[2]) - ($umumiy);
 
-                $cost = intval($result[2]) + ($umumiy);
-
-                $str = "👥 Guruh $result[1] summasi: $guruh_cost so'm\n📛 Jarimalar: $viewJarima\n🌟 Rag'batlar:$viewRagbat\n\n💰 Keyingi oy uchun to'lanishi kerak bo'lgan summa: ".number_format($cost);
+                $str = "👥 Guruh $result[1] summasi: $guruh_cost so'm\n📛 Jarimalar: $viewJarima\n🌟 Rag'batlar:$viewRagbat\n😭Qo'shimcha jarima: $qoshimcha_jarimas\n\n💰 Keyingi oy uchun to'lanishi kerak bo'lgan summa: ".number_format($cost);
 
                 $bot->sendMessage($chat_id, $str);
             }
